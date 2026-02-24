@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess - Dummy QR Code</title>
+    <!-- Include QRCode.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2F80ED;
+            margin-top: 0;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: white;
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            margin: 0 auto;
+        }
+        .instruction {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #ebf5ff;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #1a56db;
+        }
+        select {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Dummy Product QR</h1>
+        <p>Scan this barcode using the QueueLess Flutter App</p>
+
+        <select id="productSelect" onchange="generateQR()">
+            <option value="mock_123">Premium Organic Coffee ($14.99)</option>
+            <option value="mock_456">Artisan Sourdough Bread ($6.50)</option>
+            <option value="invalid_999">Unknown Product (Test Error Handling)</option>
+        </select>
+
+        <div id="qrcode"></div>
+
+        <div class="instruction">
+            <strong>How to use:</strong> Ensure your Node.js backend is running (<code>node backend/src/index.js</code>). Then open the Scanner tab in the Flutter app and point your camera here!
+        </div>
+    </div>
+
+    <script>
+        var qrcode = new QRCode(document.getElementById("qrcode"), {
+            width: 250,
+            height: 250,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        function generateQR() {
+            var elText = document.getElementById("productSelect").value;
+            qrcode.makeCode(elText);
+        }
+
+        // Generate initial QR code on load
+        window.onload = generateQR;
+    </script>
+
+</body>
+</html>
