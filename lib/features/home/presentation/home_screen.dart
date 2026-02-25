@@ -17,7 +17,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
   String selectedStoreId = 'dmart';
-  String selectedStoreName = 'SuperMart Premium';
+  String selectedStoreName = 'Dmart';
 
   @override
   void initState() {
@@ -132,7 +132,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                 ],
               ),
               const Text(
-                'Downtown Ave, City Center',
+                'Jp Road, Bhimavaram, AP',
                 style: TextStyle(fontSize: 12, color: Colors.black54),
               ),
             ],
@@ -353,17 +353,17 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.store, color: AppColors.primary),
-                title: const Text('SuperMart Premium (Dmart)'),
-                subtitle: const Text('Downtown Ave, City Center'),
+                title: const Text('Dmart'),
+                subtitle: const Text('Jp Road, Bhimavaram, AP'),
                 onTap: () {
-                  onStoreSelected('dmart', 'SuperMart Premium (Dmart)');
+                  onStoreSelected('dmart', 'Dmart');
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.store),
                 title: const Text('Zudio Fashion'),
-                subtitle: const Text('Airport Road, Terminal 2'),
+                subtitle: const Text('SRKR Marg, Bhimavaram, AP'),
                 onTap: () {
                   onStoreSelected('zudio', 'Zudio Fashion');
                   Navigator.pop(context);

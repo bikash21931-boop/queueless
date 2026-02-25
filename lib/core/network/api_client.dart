@@ -7,10 +7,10 @@ import 'dart:io' show Platform;
 
 String get baseUrl {
   if (kIsWeb) return 'http://localhost:3000/api';
-  // 10.144.33.163 is your Windows Wi-Fi IP address today.
-  // It allows your physical USB debugging phone to reach the PC.
-  if (Platform.isAndroid) return 'http://10.144.33.163:3000/api';
-  return 'http://127.0.0.1:3000/api';
+  // Production APK Build: Point directly to the host PC's Wi-Fi IP address
+  // Ensures phones can connect over the local network without a USB cable.
+  if (Platform.isAndroid) return 'http://10.220.174.163:3000/api';
+  return 'http://10.220.174.163:3000/api';
 }
 
 class ApiClient {
