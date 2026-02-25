@@ -16,6 +16,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
+  String selectedStoreId = 'dmart';
+  String selectedStoreName = 'SuperMart Premium';
 
   @override
   void initState() {
@@ -23,17 +25,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _currentIndex = widget.initialIndex;
   }
 
+  void _updateStore(String newId, String newName) {
+    setState(() {
+      selectedStoreId = newId;
+      selectedStoreName = newName;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          _HomeDashboardContent(),
-          ScannerScreen(),
-          CartScreen(),
-        ],
-      ),
+      body: [
+        _HomeDashboardContent(
+          storeName: selectedStoreName,
+          onStorePickerTriggered: _updateStore,
+        ),
+        ScannerScreen(
+          storeId: selectedStoreId,
+          onBack: () => setState(() => _currentIndex = 0),
+          onCartNavigate: () => setState(() => _currentIndex = 2),
+        ),
+        const CartScreen(),
+      ][_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -78,7 +91,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _HomeDashboardContent extends ConsumerWidget {
-  const _HomeDashboardContent();
+  final String storeName;
+  final Function(String, String) onStorePickerTriggered;
+
+  const _HomeDashboardContent({
+    required this.storeName,
+    required this.onStorePickerTriggered,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,22 +113,22 @@ class _HomeDashboardContent extends ConsumerWidget {
           size: 28,
         ),
         title: GestureDetector(
-          onTap: () => _showStorePicker(context),
+          onTap: () => _showStorePicker(context, onStorePickerTriggered),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(
-                children: const [
+                children: [
                   Text(
-                    'SuperMart Premium',
-                    style: TextStyle(
+                    storeName,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  Icon(Icons.arrow_drop_down, color: Colors.black87),
+                  const Icon(Icons.arrow_drop_down, color: Colors.black87),
                 ],
               ),
               const Text(
@@ -311,7 +330,10 @@ class _HomeDashboardContent extends ConsumerWidget {
     );
   }
 
-  void _showStorePicker(BuildContext context) {
+  void _showStorePicker(
+    BuildContext context,
+    Function(String, String) onStoreSelected,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -331,21 +353,21 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.store, color: AppColors.primary),
-                title: const Text('SuperMart Premium'),
+                title: const Text('SuperMart Premium (Dmart)'),
                 subtitle: const Text('Downtown Ave, City Center'),
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  onStoreSelected('dmart', 'SuperMart Premium (Dmart)');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.store),
-                title: const Text('SuperMart Express'),
+                title: const Text('Zudio Fashion'),
                 subtitle: const Text('Airport Road, Terminal 2'),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('SuperMart Fresh'),
-                subtitle: const Text('Green Valley, North Suburbs'),
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  onStoreSelected('zudio', 'Zudio Fashion');
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),

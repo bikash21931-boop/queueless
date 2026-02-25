@@ -7,20 +7,25 @@ import 'dart:io' show Platform;
 
 String get baseUrl {
   if (kIsWeb) return 'http://localhost:3000/api';
-  if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
+  // 10.144.33.163 is your Windows Wi-Fi IP address today.
+  // It allows your physical USB debugging phone to reach the PC.
+  if (Platform.isAndroid) return 'http://10.144.33.163:3000/api';
   return 'http://127.0.0.1:3000/api';
 }
 
 class ApiClient {
   static String? authToken;
 
-  static Future<Product?> fetchProductByQR(String qrCode) async {
+  static Future<Product?> fetchProductByQR(
+    String qrCode,
+    String storeId,
+  ) async {
     try {
       final response = await http.get(
-        Uri.parse('\$baseUrl/products/\$qrCode'),
+        Uri.parse('$baseUrl/products/$qrCode?storeId=$storeId'),
         headers: {
           'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer \$authToken',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
       );
 
@@ -43,10 +48,10 @@ class ApiClient {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('\$baseUrl/payment/process'),
+        Uri.parse('$baseUrl/payment/process'),
         headers: {
           'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer \$authToken',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
         body: jsonEncode({'items': items, 'total_price': total}),
       );
@@ -56,6 +61,51 @@ class ApiClient {
     } catch (e) {
       debugPrint('Payment error: \$e');
       return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      debugPrint('Login error: \$e');
+      return {'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> register({
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'firstName': firstName,
+          'lastName': lastName,
+          'phone': phone,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      debugPrint('Registration error: \$e');
+      return {'error': e.toString()};
     }
   }
 }

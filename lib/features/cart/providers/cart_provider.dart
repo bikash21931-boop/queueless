@@ -5,32 +5,7 @@ import '../../scanner/domain/product.dart';
 class CartNotifier extends Notifier<List<CartItem>> {
   @override
   List<CartItem> build() {
-    return [
-      CartItem(
-        product: Product(
-          id: 'mock_123',
-          name: 'Premium Organic Coffee Roast',
-          price: 14.99,
-          qrCode: 'mock_123',
-          imageUrl:
-              'https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&q=80&w=200',
-          category: 'Beverages',
-        ),
-        quantity: 1,
-      ),
-      CartItem(
-        product: Product(
-          id: 'mock_456',
-          name: 'Artisan Sourdough Bread',
-          price: 6.50,
-          qrCode: 'mock_456',
-          imageUrl:
-              'https://images.unsplash.com/photo-1589367920969-ab8e050eb0e9?auto=format&fit=crop&q=80&w=200',
-          category: 'Bakery',
-        ),
-        quantity: 2,
-      ),
-    ];
+    return [];
   }
 
   // Add Item to Cart
@@ -68,13 +43,20 @@ class CartNotifier extends Notifier<List<CartItem>> {
 
   // Decrease quantity
   void decreaseQuantity(String productId) {
-    state = [
-      for (final item in state)
-        if (item.product.id == productId && item.quantity > 1)
-          item.copyWith(quantity: item.quantity - 1)
-        else
-          item,
-    ];
+    final stateList = state.toList();
+    final index = stateList.indexWhere((item) => item.product.id == productId);
+
+    if (index >= 0) {
+      if (stateList[index].quantity > 1) {
+        stateList[index] = stateList[index].copyWith(
+          quantity: stateList[index].quantity - 1,
+        );
+        state = stateList;
+      } else {
+        // Remove item if quantity drops to 0
+        removeItem(productId);
+      }
+    }
   }
 
   // Clear cart

@@ -25,6 +25,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       setState(() {
         isProcessing = false;
       });
+      // Clear the cart securely after a successful payment
+      ref.read(cartProvider.notifier).clear();
+
       // Navigate to success/receipt
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const ReceiptScreen()),

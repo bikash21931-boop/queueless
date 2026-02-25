@@ -8,15 +8,38 @@ import '../../home/presentation/home_screen.dart';
 import '../domain/product.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
-  const ScannerScreen({super.key});
+  final String storeId;
+  final VoidCallback? onBack;
+  final VoidCallback? onCartNavigate;
+
+  const ScannerScreen({
+    super.key,
+    required this.storeId,
+    this.onBack,
+    this.onCartNavigate,
+  });
 
   @override
   ConsumerState<ScannerScreen> createState() => _ScannerScreenState();
 }
 
 class _ScannerScreenState extends ConsumerState<ScannerScreen> {
+  late MobileScannerController cameraController;
   bool isScanning = true;
   bool isLoading = false;
+  bool isTorchOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    cameraController = MobileScannerController();
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+    super.dispose();
+  }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (!isScanning || isLoading) return;
@@ -31,7 +54,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       });
 
       // Try fetching from backend
-      Product? product = await ApiClient.fetchProductByQR(barcode.rawValue!);
+      Product? product = await ApiClient.fetchProductByQR(
+        barcode.rawValue!,
+        widget.storeId,
+      );
 
       if (!mounted) return;
 
@@ -138,12 +164,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
                     Navigator.pop(context); // Close sheet
                     // Navigate to Cart safely avoiding stack duplication
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(initialIndex: 2),
-                      ),
-                      (route) => false,
-                    );
+                    if (widget.onCartNavigate != null) {
+                      widget.onCartNavigate!();
+                    } else {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeScreen(initialIndex: 2),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   },
                   child: const Text('Add to Cart'),
                 ),
@@ -180,7 +210,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          MobileScanner(onDetect: _onDetect),
+          MobileScanner(controller: cameraController, onDetect: _onDetect),
 
           if (isLoading)
             const Center(
@@ -213,7 +243,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                       color: Colors.white,
                     ),
                     onPressed: () {
-                      if (Navigator.canPop(context)) {
+                      if (widget.onBack != null) {
+                        widget.onBack!();
+                      } else if (Navigator.canPop(context)) {
                         Navigator.pop(context);
                       } else {
                         Navigator.of(context).pushAndRemoveUntil(
@@ -234,9 +266,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.flash_on, color: Colors.white),
+                    icon: Icon(
+                      isTorchOn ? Icons.flash_on : Icons.flash_off,
+                      color: Colors.white,
+                    ),
                     onPressed: () {
-                      // Toggle Flash
+                      cameraController.toggleTorch();
+                      setState(() {
+                        isTorchOn = !isTorchOn;
+                      });
                     },
                   ),
                 ],

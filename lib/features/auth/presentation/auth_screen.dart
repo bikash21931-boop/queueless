@@ -406,14 +406,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                               return;
                                             }
 
-                                            final fullName =
-                                                '$firstName $lastName';
                                             ref
                                                 .read(authProvider.notifier)
                                                 .signUp(
-                                                  email,
-                                                  password,
-                                                  fullName,
+                                                  firstName: firstName,
+                                                  lastName: lastName,
+                                                  phone: phone,
+                                                  email: email,
+                                                  password: password,
                                                 );
                                           }
                                         },

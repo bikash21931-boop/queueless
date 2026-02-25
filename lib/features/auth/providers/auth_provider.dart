@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/app_user.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/network/api_client.dart';
 
 class AuthState {
   final AppUser? user;
@@ -53,54 +54,80 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      // 1. Try Firebase Auth
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } catch (e) {
-      debugPrint('FirebaseAuth error (falling back to mock): \$e');
+      final response = await ApiClient.login(email, password);
 
-      // Unconditional Fallback for Hackathon Demo UI Testing
-      await Future.delayed(const Duration(seconds: 1));
-      state = state.copyWith(
-        user: AppUser(id: 'mock_user_123', email: email, name: 'Mock User'),
-        isLoading: false,
-      );
+      if (response['token'] != null) {
+        ApiClient.authToken = response['token'];
+        state = state.copyWith(
+          user: AppUser(
+            id: response['uid'],
+            email: response['email'],
+            name: '${response['firstName']} ${response['lastName']}',
+          ),
+          isLoading: false,
+        );
+      } else {
+        state = state.copyWith(
+          error: response['error'] ?? 'Login failed',
+          isLoading: false,
+        );
+      }
+    } catch (e) {
+      debugPrint('API Login Error: \$e');
+      state = state.copyWith(error: 'Connection error', isLoading: false);
     }
   }
 
-  Future<void> signUp(String email, String password, String name) async {
+  Future<void> signUp({
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
-      await userCredential.user?.updateDisplayName(name);
-
-      // We would normally also write this to our Firestore Users collection here
-
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      debugPrint('FirebaseAuth error (falling back to mock): \$e');
-
-      // Unconditional Fallback for Hackathon Demo UI Testing
-      await Future.delayed(const Duration(seconds: 1));
-      state = state.copyWith(
-        user: AppUser(id: 'mock_user_new', email: email, name: name),
-        isLoading: false,
+      final response = await ApiClient.register(
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        email: email,
+        password: password,
       );
+
+      if (response['token'] != null) {
+        ApiClient.authToken = response['token'];
+        state = state.copyWith(
+          user: AppUser(
+            id: response['uid'],
+            email: response['email'],
+            name: '${response['firstName']} ${response['lastName']}',
+          ),
+          isLoading: false,
+        );
+      } else {
+        state = state.copyWith(
+          error: response['error'] ?? 'Registration failed',
+          isLoading: false,
+        );
+      }
+    } catch (e) {
+      debugPrint('API Signup Error: \$e');
+      state = state.copyWith(error: 'Connection error', isLoading: false);
     }
   }
 
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true);
     try {
+      // Firebase specific signout if mixed
       await FirebaseAuth.instance.signOut();
     } catch (e) {
-      // Mock fallback
-    } finally {
-      state = AuthState();
+      debugPrint('FirebaseAuth signOut error (ignored): $e');
     }
+
+    ApiClient.authToken = null;
+    state = AuthState(); // Reset auth
   }
 }
 

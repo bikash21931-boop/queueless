@@ -17,7 +17,7 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       name: json['name'] ?? '',
       price: (json['price'] ?? 0.0).toDouble(),
       qrCode: json['qr_code'] ?? '',

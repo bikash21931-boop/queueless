@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../auth/providers/auth_provider.dart';
+// Removed unused auth_provider import
 import '../domain/transaction_model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -30,76 +30,25 @@ class HistoryState {
 class HistoryNotifier extends Notifier<HistoryState> {
   @override
   HistoryState build() {
-    // Automatically load history when the notifier is initialized
-    _loadHistory();
+    // Automatically load history when the notifier is initialized,
+    // but MUST schedule it after the build phase completes to avoid unhandled state transitions.
+    Future.microtask(() => _loadHistory());
     return HistoryState(isLoading: true);
   }
 
   Future<void> _loadHistory() async {
-    final user = ref.read(authProvider).user;
-
-    if (user == null) {
-      state = state.copyWith(isLoading: false, error: 'User not logged in');
-      return;
-    }
-
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Fetch from API
-      // final response = await ApiClient.fetchUserTransactions(user.id);
-
       // MOCK DATA for Hackathon UI evaluation
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(milliseconds: 500));
 
-      final mockTransactions = [
-        TransactionModel(
-          id: 'TXN-102938',
-          userId: user.id,
-          totalAmount: 14.99,
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          receiptQr: 'verify:TXN-102938:mock',
-          items: [
-            TransactionItem(
-              productId: 'mock_123',
-              name: 'Premium Organic Coffee (Mock)',
-              price: 14.99,
-              quantity: 1,
-            ),
-          ],
-        ),
-        TransactionModel(
-          id: 'TXN-093847',
-          userId: user.id,
-          totalAmount: 34.50,
-          timestamp: DateTime.now().subtract(const Duration(days: 2)),
-          receiptQr: 'verify:TXN-093847:mock',
-          items: [
-            TransactionItem(
-              productId: 'mock_124',
-              name: 'Artisan Bread',
-              price: 6.50,
-              quantity: 2,
-            ),
-            TransactionItem(
-              productId: 'mock_125',
-              name: 'Oat Milk',
-              price: 5.99,
-              quantity: 1,
-            ),
-            TransactionItem(
-              productId: 'mock_126',
-              name: 'Fresh Strawberries',
-              price: 15.51,
-              quantity: 1,
-            ),
-          ],
-        ),
-      ];
+      final mockTransactions =
+          <TransactionModel>[]; // Keep it empty for now as requested
 
       state = state.copyWith(isLoading: false, transactions: mockTransactions);
     } catch (e) {
-      debugPrint('Error loading history: \$e');
+      debugPrint('Error loading history: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load receipt history.',
