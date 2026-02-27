@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/transaction_model.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/api_client.dart';
+
 class HistoryState {
   final List<TransactionModel> transactions;
   final bool isLoading;
@@ -30,8 +32,6 @@ class HistoryState {
 class HistoryNotifier extends Notifier<HistoryState> {
   @override
   HistoryState build() {
-    // Automatically load history when the notifier is initialized,
-    // but MUST schedule it after the build phase completes to avoid unhandled state transitions.
     Future.microtask(() => _loadHistory());
     return HistoryState(isLoading: true);
   }
@@ -40,13 +40,16 @@ class HistoryNotifier extends Notifier<HistoryState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // MOCK DATA for Hackathon UI evaluation
-      await Future.delayed(const Duration(milliseconds: 500));
+      final rawTransactions = await ApiClient.fetchHistory();
 
-      final mockTransactions =
-          <TransactionModel>[]; // Keep it empty for now as requested
+      final parsedTransactions = rawTransactions.map((t) {
+        return TransactionModel.fromJson(t);
+      }).toList();
 
-      state = state.copyWith(isLoading: false, transactions: mockTransactions);
+      state = state.copyWith(
+        isLoading: false,
+        transactions: parsedTransactions,
+      );
     } catch (e) {
       debugPrint('Error loading history: $e');
       state = state.copyWith(

@@ -63,6 +63,9 @@ class AuthNotifier extends Notifier<AuthState> {
             id: response['uid'],
             email: response['email'],
             name: '${response['firstName']} ${response['lastName']}',
+            monthlyBudget: (response['monthlyBudget'] ?? 0).toDouble(),
+            spentThisMonth: (response['spentThisMonth'] ?? 0).toDouble(),
+            coins: response['coins'] ?? 0,
           ),
           isLoading: false,
         );
@@ -102,6 +105,9 @@ class AuthNotifier extends Notifier<AuthState> {
             id: response['uid'],
             email: response['email'],
             name: '${response['firstName']} ${response['lastName']}',
+            monthlyBudget: (response['monthlyBudget'] ?? 0).toDouble(),
+            spentThisMonth: (response['spentThisMonth'] ?? 0).toDouble(),
+            coins: response['coins'] ?? 0,
           ),
           isLoading: false,
         );
@@ -117,13 +123,45 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  // Update budget local state after successful API call
+  void updateBudgetLocally(double newBudget) {
+    if (state.user != null) {
+      state = state.copyWith(
+        user: AppUser(
+          id: state.user!.id,
+          email: state.user!.email,
+          name: state.user!.name,
+          monthlyBudget: newBudget,
+          spentThisMonth: state.user!.spentThisMonth,
+          coins: state.user!.coins,
+        ),
+      );
+    }
+  }
+
+  // Refresh user state after payment
+  void updateSpentLocally(double additionalSpent, int earnedCoins) {
+    if (state.user != null) {
+      state = state.copyWith(
+        user: AppUser(
+          id: state.user!.id,
+          email: state.user!.email,
+          name: state.user!.name,
+          monthlyBudget: state.user!.monthlyBudget,
+          spentThisMonth: state.user!.spentThisMonth + additionalSpent,
+          coins: state.user!.coins + earnedCoins,
+        ),
+      );
+    }
+  }
+
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true);
     try {
       // Firebase specific signout if mixed
       await FirebaseAuth.instance.signOut();
     } catch (e) {
-      debugPrint('FirebaseAuth signOut error (ignored): $e');
+      debugPrint('FirebaseAuth signOut error (ignored): \$e');
     }
 
     ApiClient.authToken = null;

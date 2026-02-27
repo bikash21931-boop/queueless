@@ -24,6 +24,18 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email address'],
     },
+    monthlyBudget: {
+        type: Number,
+        default: 0,
+    },
+    spentThisMonth: {
+        type: Number,
+        default: 0,
+    },
+    coins: {
+        type: Number,
+        default: 0,
+    },
     password: {
         type: String,
         required: [true, 'Password is required'],
@@ -35,7 +47,7 @@ const userSchema = new mongoose.Schema({
 // Encrypt password before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
-        next();
+        return; // Mongoose async hooks just need to return
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

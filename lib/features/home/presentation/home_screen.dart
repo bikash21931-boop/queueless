@@ -5,6 +5,8 @@ import '../../scanner/presentation/scanner_screen.dart';
 import '../../cart/presentation/cart_screen.dart';
 import '../../history/presentation/history_screen.dart';
 import '../../account/presentation/account_screen.dart';
+import '../../membership/presentation/membership_screen.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -141,30 +143,76 @@ class _HomeDashboardContent extends ConsumerWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AccountScreen()),
-                );
-              },
-              icon: const Icon(Icons.person, color: AppColors.primary),
-              label: const Text(
-                'My Acc',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
+            child: Row(
+              children: [
+                // Coin Pill
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const MembershipScreen(),
+                      ),
+                    );
+                  },
                   borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.monetization_on,
+                          color: Colors.orange,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${ref.watch(authProvider).user?.coins ?? 0}',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                // My Account Button
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AccountScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.person, color: AppColors.primary),
+                  label: const Text(
+                    'My Acc',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

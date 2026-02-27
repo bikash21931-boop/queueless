@@ -4,6 +4,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../receipt/presentation/receipt_screen.dart';
 import '../../cart/providers/cart_provider.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
+
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
 
@@ -14,25 +17,68 @@ class PaymentScreen extends ConsumerStatefulWidget {
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool isProcessing = false;
 
-  void _processPayment() {
+  Future<void> _processPayment() async {
     setState(() {
       isProcessing = true;
     });
 
-    // Mock API Delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        isProcessing = false;
-      });
-      // Clear the cart securely after a successful payment
+    final cartItems = ref.read(cartProvider);
+    final subtotal = ref.read(cartTotalProvider);
+    final tax = subtotal * 0.08;
+    final total = subtotal + tax;
+
+    final formattedItems = cartItems
+        .map(
+          (item) => {
+            'product_id': item.product.id,
+            'name': item.product.name,
+            'quantity': item.quantity,
+            'price': item.product.price,
+          },
+        )
+        .toList();
+
+    final response = await ApiClient.processPayment(formattedItems, total);
+
+    if (!mounted) return;
+
+    setState(() {
+      isProcessing = false;
+    });
+
+    if (response['success'] == true) {
+      // Safely grab backend calculated total, fallback to frontend total
+      final double backendTotal = (response['calculatedTotal'] ?? total)
+          .toDouble();
+      final int earnedCoins = response['earnedCoins'] ?? 0;
+
+      // Update Budget Local State
+      ref
+          .read(authProvider.notifier)
+          .updateSpentLocally(backendTotal, earnedCoins);
+
+      // Clear cart securely
       ref.read(cartProvider.notifier).clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment Successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       // Navigate to success/receipt
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const ReceiptScreen()),
       );
-    });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? 'Payment Failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

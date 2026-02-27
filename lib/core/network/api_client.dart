@@ -9,8 +9,8 @@ String get baseUrl {
   if (kIsWeb) return 'http://localhost:3000/api';
   // Production APK Build: Point directly to the host PC's Wi-Fi IP address
   // Ensures phones can connect over the local network without a USB cable.
-  if (Platform.isAndroid) return 'http://10.220.174.163:3000/api';
-  return 'http://10.220.174.163:3000/api';
+  if (Platform.isAndroid) return 'http://192.168.137.55:3000/api';
+  return 'http://192.168.137.55:3000/api';
 }
 
 class ApiClient {
@@ -106,6 +106,44 @@ class ApiClient {
     } catch (e) {
       debugPrint('Registration error: \$e');
       return {'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateBudget(double monthlyBudget) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/budget'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode({'monthlyBudget': monthlyBudget}),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      debugPrint('Update budget error: \$e');
+      return {'error': e.toString()};
+    }
+  }
+
+  static Future<List<dynamic>> fetchHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/receipt/history'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+        },
+      );
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        return data['receipts'];
+      }
+      return [];
+    } catch (e) {
+      debugPrint('History fetch error: \$e');
+      return [];
     }
   }
 }

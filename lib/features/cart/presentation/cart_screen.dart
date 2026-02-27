@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../payment/presentation/payment_screen.dart';
 import '../providers/cart_provider.dart';
 import '../domain/cart_item.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
@@ -106,6 +107,11 @@ class CartScreen extends ConsumerWidget {
 
   Widget _buildBottomBar(BuildContext context, WidgetRef ref, bool isNotEmpty) {
     final total = ref.watch(cartTotalProvider);
+    final user = ref.watch(authProvider).user;
+
+    final budget = user?.monthlyBudget ?? 0.0;
+    final spent = user?.spentThisMonth ?? 0.0;
+    final isOverBudget = budget > 0 && (spent + total) > budget;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -144,7 +150,37 @@ class CartScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          if (isOverBudget) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade800,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'This purchase exceeds your monthly budget of ₹${budget.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           SizedBox(
             width: double.infinity,
             height: 56,

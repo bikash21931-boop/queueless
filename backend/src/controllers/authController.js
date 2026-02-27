@@ -41,6 +41,9 @@ const register = async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 phone: user.phone,
+                monthlyBudget: user.monthlyBudget,
+                spentThisMonth: user.spentThisMonth,
+                coins: user.coins,
                 token: generateToken(user._id),
             });
         }
@@ -68,6 +71,9 @@ const login = async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 phone: user.phone,
+                monthlyBudget: user.monthlyBudget,
+                spentThisMonth: user.spentThisMonth,
+                coins: user.coins,
                 token: generateToken(user._id),
             });
         } else {
@@ -79,7 +85,34 @@ const login = async (req, res) => {
     }
 };
 
+const updateBudget = async (req, res) => {
+    try {
+        const { monthlyBudget } = req.body;
+
+        // Ensure user is authenticated via middleware
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.monthlyBudget = monthlyBudget || 0;
+            const updatedUser = await user.save();
+
+            res.json({
+                success: true,
+                monthlyBudget: updatedUser.monthlyBudget,
+                spentThisMonth: updatedUser.spentThisMonth,
+                message: "Budget updated successfully"
+            });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Update Budget Error:', error);
+        res.status(500).json({ success: false, message: 'Server Error updating budget' });
+    }
+};
+
 module.exports = {
     register,
-    login
+    login,
+    updateBudget
 };

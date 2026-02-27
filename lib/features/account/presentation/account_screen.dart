@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/auth_screen.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../history/presentation/history_screen.dart';
+import '../../../core/network/api_client.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -12,6 +13,19 @@ class AccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+
+    if (user == null) {
+      return const Scaffold(body: Center(child: Text('Not logged in')));
+    }
+
+    final budget = user.monthlyBudget;
+    final spent = user.spentThisMonth;
+    final progress = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final progressColor = progress > 0.9
+        ? Colors.red
+        : progress > 0.7
+        ? Colors.orange
+        : AppColors.primary;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -32,60 +46,149 @@ class AccountScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // User Header Profile Card
-            TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 600),
-              tween: Tween<double>(begin: 0, end: 1),
-              curve: Curves.easeOutCubic,
-              builder: (context, double value, child) {
-                return Transform.translate(
-                  offset: Offset(0, 50 * (1 - value)),
-                  child: Opacity(opacity: value, child: child),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.secondary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            // Profile Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.person, size: 48, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      user?.name ?? 'Guest User',
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    child: Text(
+                      user.name.substring(0, 1).toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? 'Not logged in',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user.email,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // BUDGET WIDGET (NEW)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2B2D42), Color(0xFF1E1E2C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Monthly Budget',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            _showBudgetDialog(context, ref, budget),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '₹${spent.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '/ ₹${budget.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: budget > 0 ? progress : 0,
+                      minHeight: 10,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    ),
+                  ),
+                  if (budget > 0 && progress >= 1.0)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Text(
+                        'Warning: You have exceeded your budget!',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
 
@@ -146,36 +249,28 @@ class AccountScreen extends ConsumerWidget {
             const SizedBox(height: 48),
 
             // Footer Logout
-            TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 600),
-              tween: Tween<double>(begin: 0, end: 1),
-              curve: Curves.easeOutCubic,
-              builder: (context, double value, child) {
-                return Opacity(opacity: value, child: child);
+            OutlinedButton.icon(
+              onPressed: () {
+                ref.read(authProvider.notifier).signOut();
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  (route) => false,
+                );
               },
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(authProvider.notifier).signOut();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const AuthScreen()),
-                    (route) => false,
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.redAccent, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                label: const Text(
-                  'Log Out',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.redAccent,
-                  ),
+              ),
+              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              label: const Text(
+                'Log Out',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
                 ),
               ),
             ),
@@ -183,6 +278,79 @@ class AccountScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showBudgetDialog(
+    BuildContext context,
+    WidgetRef ref,
+    double currentBudget,
+  ) {
+    final controller = TextEditingController(
+      text: currentBudget > 0 ? currentBudget.toString() : '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Set Monthly Budget'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Budget Amount (₹)',
+              border: OutlineInputBorder(),
+              prefixText: '₹ ',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newBudget = double.tryParse(controller.text) ?? 0.0;
+                Navigator.pop(
+                  dialogContext,
+                ); // Close dialog safely without shadowing
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Updating budget...')),
+                );
+
+                final response = await ApiClient.updateBudget(newBudget);
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  if (response['success'] == true) {
+                    ref
+                        .read(authProvider.notifier)
+                        .updateBudgetLocally(newBudget);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Budget updated successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          response['message'] ?? 'Failed to update budget',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 
