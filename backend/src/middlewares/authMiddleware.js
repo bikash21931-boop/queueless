@@ -28,14 +28,9 @@ const verifyToken = async (req, res, next) => {
         }
     }
 
-    // Demo Fallback: Bypass if no token provided (useful for Postman testing)
-    // Note: In strict production, this block should return 401 instead of a mock.
-    req.user = {
-        uid: 'mock_user_123',
-        _id: 'mock_user_123',
-        email: 'mock@example.com'
-    };
-    next();
+    if (!token) {
+        return res.status(401).json({ error: 'Not authorized, no token provided' });
+    }
 };
 
 module.exports = { verifyToken };

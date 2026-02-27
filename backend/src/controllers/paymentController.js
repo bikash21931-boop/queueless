@@ -1,18 +1,18 @@
 const { db } = require('../config/firebase-config');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 
 const processPayment = async (req, res) => {
     try {
         const { items, total_price } = req.body;
-        const user_id = req.user.uid;
+        const user_id = req.user.uid || req.user._id.toString();
 
         // Hackathon Demo: Firebase is unconfigured locally, so we will trust the
         // frontend's calculated `total_price` to bypass the 'No Project Id' error.
         const calculatedTotal = parseFloat(total_price) || 0;
 
         // 1. Add to user's MongoDB spentThisMonth budget tracker
-        // Using MongoDB's User Model (which is correctly connected)
         let earnedCoins = 0;
         const user = await User.findById(user_id);
         if (user) {
@@ -22,13 +22,19 @@ const processPayment = async (req, res) => {
             await user.save();
         }
 
-        // 2. Mock payment success & receipt generation (without saving to Firebase)
+        // 2. Mock payment success & receipt generation
         const transaction_id = `TXN_MOCK_${Date.now()}`;
         const receipt_qr = crypto.createHash('sha256').update(`${transaction_id}-${user_id}-${Date.now()}`).digest('hex');
 
-        // Note: For a real app, this is where we would securely save the transaction
-        // to Firestore `db.collection('Transactions')` and deduct stock. Skipping 
-        // to prevent Firebase errors on the user's local unconfigured machine.
+        // 3. Save Transaction to MongoDB (Replacing unconfigured Firebase requirement)
+        await Transaction.create({
+            transaction_id,
+            user_id,
+            items,
+            total_price: calculatedTotal,
+            payment_status: 'COMPLETED',
+            receipt_qr
+        });
 
         res.status(200).json({
             success: true,

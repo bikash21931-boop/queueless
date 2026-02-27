@@ -7,6 +7,9 @@ import '../../history/presentation/history_screen.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../membership/presentation/membership_screen.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../history/providers/history_provider.dart';
+import '../../cart/providers/cart_provider.dart';
+import '../../scanner/domain/product.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -103,6 +106,8 @@ class _HomeDashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final historyState = ref.watch(historyProvider);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
@@ -284,6 +289,24 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
+            if (!historyState.isLoading &&
+                historyState.transactions.isNotEmpty &&
+                historyState.transactions.first.items.isNotEmpty) ...[
+              Text(
+                'Buy Again',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildRecommendationCard(
+                context,
+                ref,
+                historyState.transactions.first.items.first,
+              ),
+              const SizedBox(height: 32),
+            ],
             Text(
               'Quick Menu',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -468,6 +491,115 @@ class _HomeDashboardContent extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic item,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blue.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade100,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              color: Colors.blue.shade700,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Recommended for you',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '₹${item.price.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Convert the historic TransactionItem back into a Product mapping
+              // to add it to the cart
+              final product = Product(
+                id: item.productId,
+                name: item.name,
+                price: item.price,
+                qrCode: item.productId, // Mock QR code
+                category: 'Reorder', // Mock category
+                imageUrl: '', // Mock images for historic references
+              );
+
+              ref.read(cartProvider.notifier).addProduct(product);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${item.name} added to cart!'),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: AppColors.primary,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            child: const Text('Add to Cart'),
+          ),
+        ],
       ),
     );
   }
